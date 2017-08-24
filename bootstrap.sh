@@ -4,21 +4,27 @@ sed -i 's/User apache/User vagrant/i' /etc/httpd/conf/httpd.conf
 sed -i 's/Group apache/Group vagrant/i' /etc/httpd/conf/httpd.conf
 sed -i 's/EnableSendfile on/EnableSendfile off/i' /etc/httpd/conf/httpd.conf
 sed -i '/<Directory "\/var\/www\/html">/,/<\/Directory>/ { s/AllowOverride None/AllowOverride All/i }' /etc/httpd/conf/httpd.conf
+sed -i 's/\/var\/www\/html/\/vagrant\/public/i' /etc/httpd/conf/httpd.conf
 
-rpm -Uvh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-rpm -Uvh https://mirror.webtatic.com/yum/el7/webtatic-release.rpm
-yum install -y php70w
+sed -i 's/^SELINUX=.*/SELINUX=disabled/g' /etc/selinux/config
 
-yum install -y gcc gcc-c++ autoconf automake php70w-pear php70w-devel
+yum install epel-release -y
+rpm -Uvh http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+yum install yum-utils -y
+yum-config-manager --enable remi-php71
+yum install -y php php-pear php-devel
+
+yum install -y gcc gcc-c++ autoconf automake
 pecl install Xdebug
 if [ ! -f /etc/php.d/xdebug.ini ]
 then
 echo "[xdebug]
 zend_extension=\"/usr/lib64/php/modules/xdebug.so\"
 xdebug.remote_enable = 1
-xdebug.remote_autostart = 1" > /etc/php.d/xdebug.ini
+xdebug.remote_autostart = 1
+xdebug.remote_host = 192.168.1.7" > /etc/php.d/xdebug.ini
 fi
 
-ln -fs /vagrant /var/www
+chcon -R -t httpd_sys_content_t /vagrant/
 
 systemctl restart httpd
